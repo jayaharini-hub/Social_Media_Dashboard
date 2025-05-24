@@ -15,7 +15,9 @@ function getRandomChange(prev, maxChange = 50) {
   return Math.random() > 0.5 ? prev + change : Math.max(prev - change, 0);
 }
 
-export default function SuperLiveDashboard() {
+export default function ThemeSwitcherDashboard() {
+  const [isDark, setIsDark] = useState(false);
+
   const [followers, setFollowers] = useState(1200);
   const [likes, setLikes] = useState(700);
   const [comments, setComments] = useState(150);
@@ -30,36 +32,23 @@ export default function SuperLiveDashboard() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setFollowers((prev) => {
-        const newVal = getRandomChange(prev, 30);
-        setFollowerHistory((hist) => {
-          const time = new Date().toLocaleTimeString();
+      const time = new Date().toLocaleTimeString();
+
+      const updateMetric = (prev, max, setter, historySetter) => {
+        const newVal = getRandomChange(prev, max);
+        setter(newVal);
+        historySetter((hist) => {
           const newHist = [...hist, { time, value: newVal }];
           return newHist.length > 10 ? newHist.slice(-10) : newHist;
         });
-        return newVal;
-      });
-      setLikes((prev) => {
-        const newVal = getRandomChange(prev, 40);
-        setLikesHistory((hist) => {
-          const time = new Date().toLocaleTimeString();
-          const newHist = [...hist, { time, value: newVal }];
-          return newHist.length > 10 ? newHist.slice(-10) : newHist;
-        });
-        return newVal;
-      });
-      setComments((prev) => {
-        const newVal = getRandomChange(prev, 20);
-        setCommentsHistory((hist) => {
-          const time = new Date().toLocaleTimeString();
-          const newHist = [...hist, { time, value: newVal }];
-          return newHist.length > 10 ? newHist.slice(-10) : newHist;
-        });
-        return newVal;
-      });
+      };
+
+      updateMetric(followers, 30, setFollowers, setFollowerHistory);
+      updateMetric(likes, 40, setLikes, setLikesHistory);
+      updateMetric(comments, 20, setComments, setCommentsHistory);
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [followers, likes, comments]);
 
   const calcChange = (history) => {
     if (history.length < 2) return 0;
@@ -69,219 +58,242 @@ export default function SuperLiveDashboard() {
     return (((curr - prev) / prev) * 100).toFixed(2);
   };
 
+  // Define colors depending on theme
+  const backgroundColor = isDark ? "#000000" : "#ffffff";
+  const textColor = isDark ? "#eeeeee" : "#111111";
+  const positiveColor = isDark ? "#4ade80" : "#16a34a"; // green shades
+  const negativeColor = isDark ? "#f87171" : "#dc2626"; // red shades
+  const cardBackground = isDark
+    ? "rgba(255, 255, 255, 0.1)"
+    : "rgba(0, 0, 0, 0.05)";
+  const chartStroke = isDark ? "#eeeeee" : "#111111";
+
   return (
     <>
       <style>{`
-        @keyframes gradientBG {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        * {
+          box-sizing: border-box;
         }
         body, #root {
-          margin: 0; padding: 0; height: 100vh; width: 100vw; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          margin: 0; padding: 0; height: 100vh; width: 100vw;
+          background-color: ${backgroundColor};
+          color: ${textColor};
+          font-family: 'Inter', sans-serif;
+          display: flex;
+          justify-content: center;
+          align-items: flex-start;
+          padding: 2rem 1rem;
+          transition: background-color 0.4s ease, color 0.4s ease;
+          user-select: none;
         }
-        .app-container {
-          min-height: 100vh;
-          width: 100vw;
-          background: linear-gradient(-45deg, #3b82f6, #9333ea, #10b981, #f97316);
-          background-size: 400% 400%;
-          animation: gradientBG 15s ease infinite;
+        .container {
+          max-width: 1000px;
+          width: 100%;
           display: flex;
           flex-direction: column;
+          gap: 2rem;
           align-items: center;
-          padding: 2rem 1rem;
-          color: white;
         }
-        .title {
-          font-size: 3rem;
-          font-weight: 900;
-          letter-spacing: 0.1em;
-          margin-bottom: 2rem;
-          text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+        h1 {
+          font-weight: 700;
+          font-size: 2.8rem;
+          margin: 0;
+          user-select: none;
+        }
+        button.toggle-btn {
+          padding: 0.5rem 1.2rem;
+          font-size: 1rem;
+          font-weight: 600;
+          border-radius: 6px;
+          cursor: pointer;
+          background-color: ${isDark ? "#eee" : "#222"};
+          color: ${isDark ? "#111" : "#fff"};
+          border: none;
+          align-self: flex-end;
+          transition: background-color 0.3s ease, color 0.3s ease;
           user-select: none;
         }
         .metrics-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-          gap: 2rem;
+          grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
+          gap: 1.8rem;
           width: 100%;
-          max-width: 1200px;
-          margin-bottom: 3rem;
         }
-        .metric-card {
-          background: rgba(255 255 255 / 0.15);
-          border-radius: 1rem;
-          box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          border: 1px solid rgba(255 255 255 / 0.18);
-          padding: 2rem 1.5rem;
-          text-align: center;
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-          position: relative;
+        .card {
+          background: ${cardBackground};
+          border-radius: 12px;
+          padding: 1.8rem 2rem;
+          box-shadow: ${isDark
+            ? "0 4px 12px rgba(255,255,255,0.1)"
+            : "0 4px 12px rgba(0,0,0,0.1)"};
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          transition: background-color 0.3s ease, box-shadow 0.3s ease;
           user-select: none;
-        }
-        .metric-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 12px 40px rgba(0,0,0,0.3);
         }
         .metric-name {
           font-weight: 700;
-          font-size: 1.25rem;
-          margin-bottom: 0.5rem;
-          letter-spacing: 0.05em;
-          text-shadow: 0 0 5px rgba(0,0,0,0.15);
+          font-size: 1.2rem;
+          margin-bottom: 0.6rem;
         }
         .metric-value {
-          font-size: 4rem;
-          font-weight: 900;
-          letter-spacing: 0.05em;
-          margin-bottom: 0.3rem;
-          text-shadow: 0 0 10px rgba(0,0,0,0.3);
+          font-size: 3.8rem;
+          font-weight: 700;
+          margin-bottom: 0.4rem;
+          user-select: text;
         }
         .metric-change {
           font-weight: 600;
           font-size: 1.2rem;
-          display: inline-flex;
+          user-select: none;
+          display: flex;
           align-items: center;
-          user-select: text;
-          animation: pulse 2s infinite;
+          gap: 0.3rem;
         }
         .metric-change.positive {
-          color: #4ade80; /* green */
-          text-shadow: 0 0 8px #4ade80;
+          color: ${positiveColor};
         }
         .metric-change.negative {
-          color: #f87171; /* red */
-          text-shadow: 0 0 8px #f87171;
-        }
-        @keyframes pulse {
-          0% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.7;
-          }
-          100% {
-            opacity: 1;
-          }
+          color: ${negativeColor};
         }
         .charts-container {
           display: flex;
           flex-wrap: wrap;
           gap: 2rem;
           width: 100%;
-          max-width: 1200px;
           justify-content: center;
         }
         .chart-box {
-          background: rgba(255 255 255 / 0.2);
-          border-radius: 1rem;
-          padding: 1.5rem;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-          flex: 1 1 500px;
-          min-width: 350px;
-          color: #111;
+          background: ${cardBackground};
+          border-radius: 12px;
+          padding: 1.5rem 2rem;
+          box-shadow: ${isDark
+            ? "0 4px 12px rgba(255,255,255,0.1)"
+            : "0 4px 12px rgba(0,0,0,0.1)"};
+          flex: 1 1 460px;
+          min-width: 300px;
           user-select: none;
+          color: ${textColor};
         }
         .chart-title {
           font-weight: 700;
-          font-size: 1.5rem;
+          font-size: 1.4rem;
           margin-bottom: 1rem;
-          color: white;
-          text-shadow: 0 0 5px rgba(0,0,0,0.6);
+          user-select: none;
         }
-        /* Tooltip custom style for Recharts */
+        /* Tooltip Override */
         .recharts-default-tooltip {
-          background: rgba(0, 0, 0, 0.85) !important;
-          color: white !important;
-          border-radius: 8px !important;
+          background: ${isDark ? "#222" : "#fff"} !important;
+          color: ${isDark ? "#eee" : "#111"} !important;
+          border-radius: 6px !important;
           padding: 8px 12px !important;
           font-weight: 600 !important;
           font-size: 0.9rem !important;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
+          box-shadow: 0 3px 8px rgba(0,0,0,0.2) !important;
           pointer-events: none !important;
           user-select: none !important;
         }
       `}</style>
 
-      <div className="app-container" role="main">
-        <h1 className="title">🔥 Google-Level Live Social Dashboard 🔥</h1>
+      <div className="container" role="main" aria-label="Live social media dashboard with theme switcher">
+        <button
+          aria-pressed={isDark}
+          aria-label={`Switch to ${isDark ? "light" : "dark"} theme`}
+          className="toggle-btn"
+          onClick={() => setIsDark((d) => !d)}
+        >
+          {isDark ? "Switch to Light Theme" : "Switch to Dark Theme"}
+        </button>
 
-        <div className="metrics-grid" aria-label="Social Media Metrics">
+        <h1 tabIndex={-1}>Live Social Media Dashboard</h1>
+
+        <section className="metrics-grid" aria-label="Social media metrics">
           {[
-            { name: "Followers", value: followers, color: "#3b82f6", history: followerHistory },
-            { name: "Likes", value: likes, color: "#ec4899", history: likesHistory },
-            { name: "Comments", value: comments, color: "#10b981", history: commentsHistory },
-          ].map(({ name, value, color, history }) => {
+            { name: "Followers", value: followers, history: followerHistory },
+            { name: "Likes", value: likes, history: likesHistory },
+            { name: "Comments", value: comments, history: commentsHistory },
+          ].map(({ name, value, history }) => {
             const change = calcChange(history);
             const positive = change >= 0;
             return (
-              <div className="metric-card" key={name} style={{ borderColor: color }}>
+              <article
+                className="card"
+                key={name}
+                aria-label={`${name} metric card with value and percentage change`}
+              >
                 <h2 className="metric-name">{name}</h2>
-                <p className="metric-value" style={{ color }}>
+                <p className="metric-value" tabIndex={0}>
                   {value.toLocaleString()}
                 </p>
                 <p
                   className={`metric-change ${positive ? "positive" : "negative"}`}
                   aria-live="polite"
+                  aria-atomic="true"
                 >
                   {positive ? "▲" : "▼"} {Math.abs(change)}%
                 </p>
-              </div>
+              </article>
             );
           })}
-        </div>
+        </section>
 
-        <div className="charts-container" aria-label="Social Media Analytics Charts">
-          <section className="chart-box" aria-labelledby="followers-chart-title">
-            <h3 id="followers-chart-title" className="chart-title">
-              Followers Growth (Last 10 updates)
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
+        <section className="charts-container" aria-label="Social media data charts">
+          <div className="chart-box" aria-label="Follower count over time">
+            <h3 className="chart-title">Followers Over Time</h3>
+            <ResponsiveContainer width="100%" height={220}>
               <LineChart data={followerHistory}>
-                <XAxis dataKey="time" stroke="white" />
-                <YAxis stroke="white" />
+                <XAxis
+                  dataKey="time"
+                  stroke={chartStroke}
+                  tick={{ fill: textColor }}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  stroke={chartStroke}
+                  tick={{ fill: textColor }}
+                  domain={["dataMin", "dataMax"]}
+                />
                 <Tooltip />
                 <Line
                   type="monotone"
                   dataKey="value"
                   stroke="#3b82f6"
-                  strokeWidth={4}
-                  dot={{ r: 6, strokeWidth: 2, fill: "#3b82f6" }}
-                  activeDot={{ r: 8 }}
+                  strokeWidth={3}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 6 }}
                 />
               </LineChart>
             </ResponsiveContainer>
-          </section>
+          </div>
 
-          <section className="chart-box" aria-labelledby="likes-comments-chart-title">
-            <h3 id="likes-comments-chart-title" className="chart-title">
-              Likes & Comments Comparison (Last 10 updates)
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart
-                data={likesHistory.map((d, i) => ({
-                  time: d.time,
-                  Likes: d.value,
-                  Comments: commentsHistory[i]?.value || 0,
-                }))}
-              >
-                <XAxis dataKey="time" stroke="white" />
-                <YAxis stroke="white" />
+          <div className="chart-box" aria-label="Likes and comments over time">
+            <h3 className="chart-title">Likes & Comments Over Time</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={likesHistory.map((d, i) => ({
+                time: d.time,
+                Likes: d.value,
+                Comments: commentsHistory[i]?.value || 0,
+              }))}>
+                <XAxis
+                  dataKey="time"
+                  stroke={chartStroke}
+                  tick={{ fill: textColor }}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  stroke={chartStroke}
+                  tick={{ fill: textColor }}
+                  domain={["dataMin", "dataMax"]}
+                />
                 <Tooltip />
-                <Bar dataKey="Likes" fill="#ec4899" />
-                <Bar dataKey="Comments" fill="#10b981" />
+                <Bar dataKey="Likes" fill="#ec4899" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Comments" fill="#10b981" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </section>
-        </div>
+          </div>
+        </section>
       </div>
     </>
   );
